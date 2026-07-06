@@ -12,6 +12,7 @@ import ScrollHero from "@/components/ScrollHero";
 import { products, getFeaturedProducts } from "@/lib/data";
 
 const HERO_VIDEO_SRC = "/hero-scroll.mp4";
+const HERO_VIDEO_MOBILE_SRC = "/hero-scroll-mobile.m4v";
 const HERO_POSTER_SRC = "/hero-poster.jpg";
 const featured = getFeaturedProducts(4);
 const newArrivals = products.filter((p) => p.badge === "new").slice(0, 4);
@@ -22,7 +23,11 @@ export default function HomePage() {
       <HeroPreload />
       <TopBar />
 
-      <ScrollHero videoSrc={HERO_VIDEO_SRC} posterSrc={HERO_POSTER_SRC}>
+      <ScrollHero
+        videoSrc={HERO_VIDEO_SRC}
+        mobileVideoSrc={HERO_VIDEO_MOBILE_SRC}
+        posterSrc={HERO_POSTER_SRC}
+      >
         <div className="absolute inset-0 z-[2] flex flex-col items-center justify-end pb-20 px-5 max-w-lg mx-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 16 }}

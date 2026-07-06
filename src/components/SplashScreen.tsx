@@ -36,7 +36,6 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
     };
 
     preload("/hero-poster.jpg", "image");
-    preload("/hero-scroll.mp4", "video", "video/mp4");
 
     if (sessionStorage.getItem(SPLASH_KEY)) {
       finish();

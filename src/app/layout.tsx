@@ -51,6 +51,9 @@ export default function RootLayout({
       className={`${dmSans.variable} ${geistMono.variable} ${syne.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preload" href="/hero-poster.jpg" as="image" type="image/jpeg" />
+      </head>
       <body className="min-h-screen grid-bg">
         <Providers>{children}</Providers>
       </body>

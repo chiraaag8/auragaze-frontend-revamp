@@ -1,10 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 interface ScrollHeroProps {
   videoSrc: string;
-  posterSrc?: string;
+  mobileVideoSrc?: string;
+  posterSrc: string;
   children?: React.ReactNode;
 }
 
@@ -12,16 +13,29 @@ function getViewportHeight() {
   return window.visualViewport?.height ?? window.innerHeight;
 }
 
-export default function ScrollHero({ videoSrc, posterSrc, children }: ScrollHeroProps) {
+export default function ScrollHero({
+  videoSrc,
+  mobileVideoSrc,
+  posterSrc,
+  children,
+}: ScrollHeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoVisible, setVideoVisible] = useState(false);
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
     const sticky = stickyRef.current;
     const video = videoRef.current;
     if (!section || !sticky || !video) return;
+
+    const resolvedSrc =
+      mobileVideoSrc && window.matchMedia("(max-width: 768px)").matches
+        ? mobileVideoSrc
+        : videoSrc;
+    video.src = resolvedSrc;
+    video.load();
 
     let duration = 0;
     let ready = false;
@@ -40,6 +54,7 @@ export default function ScrollHero({ videoSrc, posterSrc, children }: ScrollHero
 
     const scrub = () => {
       if (!ready || duration <= 0 || scrollRange <= 0) return;
+      if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
 
       const scrolled = window.scrollY - sectionTop;
       const progress = Math.min(1, Math.max(0, scrolled / scrollRange));
@@ -66,6 +81,7 @@ export default function ScrollHero({ videoSrc, posterSrc, children }: ScrollHero
       video.pause();
       ready = true;
       lastTargetTime = -1;
+      setVideoVisible(true);
       scrub();
     };
 
@@ -76,14 +92,14 @@ export default function ScrollHero({ videoSrc, posterSrc, children }: ScrollHero
     };
 
     syncLayout();
-    scrub();
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
     window.visualViewport?.addEventListener("resize", onResize);
 
     video.addEventListener("loadedmetadata", onReady);
-    if (video.readyState >= 1) onReady();
+    video.addEventListener("canplay", onReady);
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) onReady();
 
     return () => {
       cancelAnimationFrame(rafId);
@@ -91,23 +107,33 @@ export default function ScrollHero({ videoSrc, posterSrc, children }: ScrollHero
       window.removeEventListener("resize", onResize);
       window.visualViewport?.removeEventListener("resize", onResize);
       video.removeEventListener("loadedmetadata", onReady);
+      video.removeEventListener("canplay", onReady);
     };
-  }, [videoSrc]);
+  }, [videoSrc, mobileVideoSrc]);
 
   return (
-    <section ref={sectionRef} className="relative">
+    <section ref={sectionRef} className="relative min-h-[200dvh]">
       <div
         ref={stickyRef}
-        className="sticky top-0 w-full overflow-hidden will-change-transform"
+        className="sticky top-0 relative h-[100dvh] min-h-[100dvh] w-full overflow-hidden will-change-transform"
       >
+        <img
+          src={posterSrc}
+          alt=""
+          decoding="sync"
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover"
+          aria-hidden
+        />
+
         <video
           ref={videoRef}
-          src={videoSrc}
-          poster={posterSrc}
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 h-full w-full object-cover"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+            videoVisible ? "opacity-100" : "opacity-0"
+          }`}
           aria-hidden
         />
 
