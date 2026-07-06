@@ -25,6 +25,19 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   }, [onComplete]);
 
   useLayoutEffect(() => {
+    const preload = (href: string, as: string, type?: string) => {
+      if (document.querySelector(`link[rel="preload"][href="${href}"]`)) return;
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.href = href;
+      link.as = as;
+      if (type) link.type = type;
+      document.head.appendChild(link);
+    };
+
+    preload("/hero-poster.jpg", "image");
+    preload("/hero-scroll.mp4", "video", "video/mp4");
+
     if (sessionStorage.getItem(SPLASH_KEY)) {
       finish();
       return;

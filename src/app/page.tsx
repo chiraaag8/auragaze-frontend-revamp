@@ -7,19 +7,22 @@ import { ArrowRight, TrendingUp } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import ProductCard from "@/components/ProductCard";
+import HeroPreload from "@/components/HeroPreload";
 import ScrollHero from "@/components/ScrollHero";
 import { products, getFeaturedProducts } from "@/lib/data";
 
 const HERO_VIDEO_SRC = "/hero-scroll.mp4";
+const HERO_POSTER_SRC = "/hero-poster.jpg";
 const featured = getFeaturedProducts(4);
 const newArrivals = products.filter((p) => p.badge === "new").slice(0, 4);
 
 export default function HomePage() {
   return (
     <div className="min-h-screen pb-6">
+      <HeroPreload />
       <TopBar />
 
-      <ScrollHero videoSrc={HERO_VIDEO_SRC}>
+      <ScrollHero videoSrc={HERO_VIDEO_SRC} posterSrc={HERO_POSTER_SRC}>
         <div className="absolute inset-0 z-[2] flex flex-col items-center justify-end pb-20 px-5 max-w-lg mx-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 16 }}

@@ -15,9 +15,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <CartProvider>
         <SplashScreen onComplete={handleSplashComplete} />
+        {children}
         {appReady && (
           <>
-            {children}
             <Footer />
             <FloatingNav />
           </>
