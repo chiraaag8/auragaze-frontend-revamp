@@ -1,0 +1,23 @@
+{
+  "duration": 10.01,
+  "sets": [
+    {
+      "id": "desktop",
+      "count": 150,
+      "width": 1080,
+      "fps": 15,
+      "duration": 10.01,
+      "ext": "webp",
+      "basePath": "/hero-frames"
+    },
+    {
+      "id": "mobile",
+      "count": 120,
+      "width": 720,
+      "fps": 12,
+      "duration": 10.01,
+      "ext": "webp",
+      "basePath": "/hero-frames-mobile"
+    }
+  ]
+}

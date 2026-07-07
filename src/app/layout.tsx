@@ -53,6 +53,8 @@ export default function RootLayout({
     >
       <head>
         <link rel="preload" href="/hero-poster.jpg" as="image" type="image/jpeg" />
+        <link rel="preload" href="/hero-frames-mobile/frame_0001.webp" as="image" type="image/webp" media="(max-width: 768px)" />
+        <link rel="preload" href="/hero-frames/frame_0001.webp" as="image" type="image/webp" media="(min-width: 769px)" />
       </head>
       <body className="min-h-screen grid-bg">
         <Providers>{children}</Providers>

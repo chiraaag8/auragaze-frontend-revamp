@@ -1,0 +1,9 @@
+{
+  "id": "desktop",
+  "count": 150,
+  "width": 1080,
+  "fps": 15,
+  "duration": 10.01,
+  "ext": "webp",
+  "basePath": "/hero-frames"
+}

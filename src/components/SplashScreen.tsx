@@ -35,7 +35,14 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       document.head.appendChild(link);
     };
 
-    preload("/hero-poster.jpg", "image");
+    preload("/hero-poster.jpg", "image", "image/jpeg");
+
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    preload(
+      isMobile ? "/hero-frames-mobile/frame_0001.webp" : "/hero-frames/frame_0001.webp",
+      "image",
+      "image/webp",
+    );
 
     if (sessionStorage.getItem(SPLASH_KEY)) {
       finish();

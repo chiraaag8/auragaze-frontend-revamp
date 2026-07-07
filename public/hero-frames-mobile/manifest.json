@@ -1,0 +1,9 @@
+{
+  "id": "mobile",
+  "count": 120,
+  "width": 720,
+  "fps": 12,
+  "duration": 10.01,
+  "ext": "webp",
+  "basePath": "/hero-frames-mobile"
+}
