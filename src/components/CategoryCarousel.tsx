@@ -4,7 +4,7 @@ import { motion, PanInfo, type Transition } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { carouselCategories, type CarouselCategory } from "@/lib/data";
+import { carouselCategories as fallbackCategories, type CarouselCategory } from "@/lib/data";
 import { useCatalog } from "@/context/CatalogContext";
 import { getLiveCarouselCategories } from "@/lib/category-utils";
 import { cn } from "@/lib/utils";
@@ -140,7 +140,8 @@ function CarouselCard({
 
 export default function CategoryCarousel() {
   const { products } = useCatalog();
-  const liveCategories = getLiveCarouselCategories(carouselCategories, products);
+  const [categories, setCategories] = useState<CarouselCategory[]>(fallbackCategories);
+  const liveCategories = getLiveCarouselCategories(categories, products);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -168,6 +169,25 @@ export default function CategoryCarousel() {
       paginate(-1);
     }
   };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch("/api/carousel-categories");
+        if (!response.ok || !active) return;
+        const data = (await response.json()) as CarouselCategory[];
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      } catch {
+        // Keep fallback categories when the API is unavailable.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");

@@ -2,16 +2,27 @@ import { prisma } from "@/lib/prisma";
 import { mapOrderSummary } from "@/lib/order-mapper";
 import type { AdminStats } from "@/types/admin-order";
 import { LOW_STOCK_THRESHOLD } from "@/types/admin-inventory";
+import { STORE_TIME_ZONE } from "@/lib/utils";
 import { OrderStatus } from "@prisma/client";
 
-function startOfToday() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
+function startOfTodayInStoreTz() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: STORE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  // Midnight Asia/Kolkata as an absolute UTC instant
+  return new Date(`${year}-${month}-${day}T00:00:00+05:30`);
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const today = startOfToday();
+  const today = startOfTodayInStoreTz();
 
   const [revenueAgg, ordersToday, openOrders, lowStockVariants, recentOrders] =
     await Promise.all([

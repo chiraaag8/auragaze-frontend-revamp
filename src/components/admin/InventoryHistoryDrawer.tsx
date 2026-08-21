@@ -7,18 +7,11 @@ import type {
   InventoryRow,
   InventoryTransactionRow,
 } from "@/types/admin-inventory";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 interface InventoryHistoryDrawerProps {
   row: InventoryRow;
   onClose: () => void;
-}
-
-function formatWhen(iso: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
 }
 
 export default function InventoryHistoryDrawer({
@@ -129,7 +122,7 @@ export default function InventoryHistoryDrawer({
                     </span>
                   </div>
                   <p className="mt-2 text-xs text-[var(--muted)]">
-                    {formatWhen(tx.createdAt)}
+                    {formatDateTime(tx.createdAt)}
                   </p>
                   {tx.note ? (
                     <p className="mt-1 text-sm text-[var(--muted-strong)]">

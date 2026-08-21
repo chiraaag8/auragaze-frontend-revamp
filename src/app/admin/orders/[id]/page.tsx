@@ -8,17 +8,10 @@ import {
   orderStatusLabel,
   orderStatusTone,
 } from "@/lib/order-status";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatDateTime, formatPrice } from "@/lib/utils";
 
 interface AdminOrderDetailPageProps {
   params: Promise<{ id: string }>;
-}
-
-function formatWhen(iso: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "full",
-    timeStyle: "short",
-  }).format(new Date(iso));
 }
 
 export default async function AdminOrderDetailPage({
@@ -55,7 +48,11 @@ export default async function AdminOrderDetailPage({
               {order.id}
             </p>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Placed {formatWhen(order.createdAt)}
+              Placed{" "}
+              {formatDateTime(order.createdAt, {
+                dateStyle: "full",
+                timeStyle: "short",
+              })}
             </p>
           </div>
           <span

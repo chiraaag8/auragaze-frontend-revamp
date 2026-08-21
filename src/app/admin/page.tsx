@@ -14,14 +14,7 @@ import {
   orderStatusTone,
 } from "@/lib/order-status";
 import { getAdminStats } from "@/lib/admin-stats-service";
-import { cn, formatPrice } from "@/lib/utils";
-
-function formatWhen(iso: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
+import { cn, formatDateTime, formatPrice } from "@/lib/utils";
 
 export default async function AdminOverviewPage() {
   const stats = await getAdminStats();
@@ -60,7 +53,7 @@ export default async function AdminOverviewPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--label-accent)]">
             Dashboard
           </p>
-          <h1 className="font-heading text-3xl font-black tracking-tight">
+          <h1 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
             Overview
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
@@ -109,12 +102,12 @@ export default async function AdminOverviewPage() {
                 <Link
                   key={order.id}
                   href={`/admin/orders/${order.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] p-3 transition-colors hover:bg-[var(--surface-hover)]"
+                  className="flex flex-col gap-2 rounded-xl border border-[var(--border)] p-3 transition-colors hover:bg-[var(--surface-hover)] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                 >
                   <div>
                     <p className="font-semibold">{order.customerName}</p>
                     <p className="text-xs text-[var(--muted)]">
-                      {formatWhen(order.createdAt)} · {order.itemCount} items
+                      {formatDateTime(order.createdAt)} · {order.itemCount} items
                     </p>
                   </div>
                   <div className="text-right">

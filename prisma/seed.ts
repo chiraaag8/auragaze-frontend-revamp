@@ -1,6 +1,6 @@
 import { PrismaClient, ProductBadge, PromoType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { products } from "../src/lib/data";
+import { carouselCategories, products } from "../src/lib/data";
 
 const prisma = new PrismaClient();
 
@@ -170,6 +170,27 @@ async function seedPromoCodes() {
   });
 }
 
+async function seedCarouselCategories() {
+  for (const [index, source] of carouselCategories.entries()) {
+    await prisma.carouselCategory.upsert({
+      where: { slug: source.slug },
+      update: {
+        name: source.name,
+        image: source.image,
+        sortOrder: index,
+        isActive: true,
+      },
+      create: {
+        name: source.name,
+        slug: source.slug,
+        image: source.image,
+        sortOrder: index,
+        isActive: true,
+      },
+    });
+  }
+}
+
 async function seedSiteSettings() {
   await prisma.siteSettings.upsert({
     where: { id: "default" },
@@ -186,6 +207,7 @@ async function main() {
   await seedAdmin();
   await seedProducts();
   await seedPromoCodes();
+  await seedCarouselCategories();
   await seedSiteSettings();
 
   const [productCount, variantCount] = await Promise.all([

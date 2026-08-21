@@ -14,6 +14,33 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
+/** Store timezone — order times are always shown in India local time. */
+export const STORE_TIME_ZONE = "Asia/Kolkata";
+
+export function formatDateTime(
+  value: string | Date,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: STORE_TIME_ZONE,
+    ...(options ?? { dateStyle: "medium", timeStyle: "short" }),
+  }).format(typeof value === "string" ? new Date(value) : value);
+}
+
+export function formatDate(
+  value: string | Date,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: STORE_TIME_ZONE,
+    ...(options ?? {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+  }).format(typeof value === "string" ? new Date(value) : value);
+}
+
 export function getDiscountPercent(price: number, originalPrice: number): number {
   return Math.round(((originalPrice - price) / originalPrice) * 100);
 }

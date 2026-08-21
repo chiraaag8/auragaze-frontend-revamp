@@ -6,7 +6,7 @@ import { ChevronRight, LoaderCircle, Package } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import PageShell from "@/components/PageShell";
 import { orderStatusLabel, orderStatusTone } from "@/lib/order-status";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatDateTime, formatPrice, cn } from "@/lib/utils";
 import type { OrderSummary } from "@/types/order";
 
 export default function OrdersPage() {
@@ -75,12 +75,8 @@ export default function OrdersPage() {
                         {formatPrice(order.total)}
                       </p>
                       <p className="text-xs text-muted">
-                        {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        · {order.itemCount} {order.itemCount === 1 ? "item" : "items"}
+                        {formatDateTime(order.createdAt)} · {order.itemCount}{" "}
+                        {order.itemCount === 1 ? "item" : "items"}
                       </p>
                     </div>
                     <span

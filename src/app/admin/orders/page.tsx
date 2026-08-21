@@ -9,7 +9,7 @@ import {
   orderStatusTone,
 } from "@/lib/order-status";
 import type { AdminOrderSummary } from "@/types/admin-order";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatDateTime, formatPrice } from "@/lib/utils";
 
 const STATUS_FILTERS = [
   { value: "", label: "All statuses" },
@@ -19,13 +19,6 @@ const STATUS_FILTERS = [
   { value: "DELIVERED", label: "Delivered" },
   { value: "CANCELLED", label: "Cancelled" },
 ] as const;
-
-function formatWhen(iso: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
@@ -154,7 +147,7 @@ export default function AdminOrdersPage() {
                       </span>
                     </td>
                     <td className="text-sm text-[var(--muted)]">
-                      {formatWhen(order.createdAt)}
+                      {formatDateTime(order.createdAt)}
                     </td>
                     <td>
                       <div className="flex justify-end">

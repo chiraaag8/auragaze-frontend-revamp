@@ -350,3 +350,20 @@ h6 {
 .admin-table tbody tr:hover {
   background: var(--surface-hover);
 }
+
+@media (max-width: 1023px) {
+  .admin-table {
+    min-width: 36rem;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .admin-button-primary,
+  .admin-button-secondary {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}

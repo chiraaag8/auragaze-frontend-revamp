@@ -11,7 +11,7 @@ import {
   orderStatusLabel,
   orderStatusTone,
 } from "@/lib/order-status";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatDateTime, formatPrice, cn } from "@/lib/utils";
 import type { OrderDetail } from "@/types/order";
 
 export default function OrderDetailPage() {
@@ -81,7 +81,7 @@ export default function OrderDetailPage() {
               <p className="mt-1 text-2xl font-black">{formatPrice(order.total)}</p>
               <p className="text-xs text-muted">
                 Placed{" "}
-                {new Date(order.createdAt).toLocaleString("en-IN", {
+                {formatDateTime(order.createdAt, {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
