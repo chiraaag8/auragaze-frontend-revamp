@@ -124,7 +124,7 @@ const categories = [
   },
 ];
 
-const shopFilters = ["All", "Basics", "Graphic", "Full Sleeve", "New Arrivals"];
+const shopFilters = ["All", "Oversized Tees", "Basics", "Graphic", "Full Sleeve", "New Arrivals"];
 
 const file = `export interface Product {
   id: string;

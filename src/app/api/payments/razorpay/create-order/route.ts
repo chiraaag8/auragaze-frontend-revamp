@@ -37,8 +37,15 @@ export async function POST(req: Request) {
       ? (body as { promoCode: string }).promoCode
       : undefined;
 
+  const postalCode =
+    body &&
+    typeof body === "object" &&
+    typeof (body as { postalCode?: unknown }).postalCode === "string"
+      ? (body as { postalCode: string }).postalCode
+      : undefined;
+
   try {
-    const totals = await getCheckoutTotals(user.id, promoCode);
+    const totals = await getCheckoutTotals(user.id, promoCode, postalCode);
     const amountPaise = rupeesToPaise(totals.total);
 
     if (amountPaise < 100) {

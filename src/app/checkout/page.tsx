@@ -11,9 +11,13 @@ import TopBar from "@/components/TopBar";
 import PageShell from "@/components/PageShell";
 import PromoCodeForm from "@/components/PromoCodeForm";
 import { useCart } from "@/context/CartContext";
-import { useShippingSettings } from "@/context/ShippingSettingsContext";
 import { setStoredPromoCode, getStoredPromoCode } from "@/lib/promo-storage";
 import { loadRazorpayCheckoutScript } from "@/lib/razorpay-checkout";
+import {
+  SHIPPING_ORIGIN,
+  SHIPPING_RATE_TIERS,
+  type ShippingRateTier,
+} from "@/lib/shipping-distance";
 import { formatPrice, cn } from "@/lib/utils";
 import type { SavedAddress } from "@/types/address";
 import type { ShippingAddress } from "@/types/order";
@@ -21,13 +25,17 @@ import type { ShippingAddress } from "@/types/order";
 const inputClassName =
   "w-full rounded-xl border border-(--border) bg-background py-3 px-4 text-sm outline-none transition focus:border-blue-500";
 
-type PaymentMethod = "cod" | "razorpay";
+type ShippingQuoteState = {
+  shippingFee: number;
+  distanceKm: number;
+  tier: ShippingRateTier;
+  placeName: string;
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { status, data: session } = useSession();
   const { items, subtotal, hydrated, clearCart } = useCart();
-  const { shippingFee, freeShippingThreshold } = useShippingSettings();
   const [submitting, setSubmitting] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +45,11 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("razorpay");
+  const [shippingQuote, setShippingQuote] = useState<ShippingQuoteState | null>(
+    null,
+  );
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState("");
   const [form, setForm] = useState<ShippingAddress>({
     name: "",
     label: "Home",
@@ -56,14 +68,9 @@ export default function CheckoutPage() {
         const response = await fetch("/api/payments/razorpay/status");
         const data = (await response.json()) as { enabled?: boolean };
         if (!active) return;
-        const enabled = Boolean(data.enabled);
-        setRazorpayEnabled(enabled);
-        if (!enabled) setPaymentMethod("cod");
+        setRazorpayEnabled(Boolean(data.enabled));
       } catch {
-        if (active) {
-          setRazorpayEnabled(false);
-          setPaymentMethod("cod");
-        }
+        if (active) setRazorpayEnabled(false);
       }
     })();
     return () => {
@@ -124,14 +131,80 @@ export default function CheckoutPage() {
     setSaveAddress(false);
   }, [savedAddresses, selectedAddressId]);
 
-  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingFee;
-  const total = Math.max(0, subtotal + shipping - promoDiscount);
+  useEffect(() => {
+    const pin = form.postalCode.trim();
+    if (!/^\d{6}$/.test(pin)) {
+      setShippingQuote(null);
+      setShippingError("");
+      setShippingLoading(false);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setShippingLoading(true);
+        setShippingError("");
+        try {
+          const response = await fetch(
+            `/api/shipping-quote?postalCode=${encodeURIComponent(pin)}`,
+          );
+          const data = (await response.json()) as ShippingQuoteState & {
+            error?: string;
+          };
+          if (!active) return;
+          if (!response.ok) {
+            setShippingQuote(null);
+            setShippingError(data.error ?? "Unable to calculate shipping");
+            return;
+          }
+          setShippingQuote({
+            shippingFee: data.shippingFee,
+            distanceKm: data.distanceKm,
+            tier: data.tier,
+            placeName: data.placeName,
+          });
+        } catch {
+          if (active) {
+            setShippingQuote(null);
+            setShippingError("Unable to calculate shipping");
+          }
+        } finally {
+          if (active) setShippingLoading(false);
+        }
+      })();
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [form.postalCode]);
+
+  const shipping = shippingQuote?.shippingFee ?? null;
+  const total =
+    shipping == null
+      ? null
+      : Math.max(0, subtotal + shipping - promoDiscount);
   const hasItems = items.length > 0;
   const activePromoCode = promoCode ?? getStoredPromoCode() ?? undefined;
 
   const disabled = useMemo(
-    () => submitting || !hasItems || status !== "authenticated",
-    [submitting, hasItems, status],
+    () =>
+      submitting ||
+      !hasItems ||
+      status !== "authenticated" ||
+      !razorpayEnabled ||
+      shipping == null ||
+      shippingLoading,
+    [
+      submitting,
+      hasItems,
+      status,
+      razorpayEnabled,
+      shipping,
+      shippingLoading,
+    ],
   );
 
   useEffect(() => {
@@ -149,30 +222,18 @@ export default function CheckoutPage() {
     void clearCart({ silent: true });
   }
 
-  async function placeCodOrder() {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        shippingAddress: form,
-        saveAddress,
-        promoCode: activePromoCode,
-      }),
-    });
-
-    const data = (await res.json()) as { orderId?: string; error?: string };
-    if (!res.ok || !data.orderId) {
-      throw new Error(data.error ?? "Unable to place order. Try again.");
+  async function placeRazorpayOrder() {
+    if (!form.postalCode || shipping == null) {
+      throw new Error("Enter a valid postal code to calculate shipping.");
     }
 
-    await completeCheckout(data.orderId);
-  }
-
-  async function placeRazorpayOrder() {
     const createRes = await fetch("/api/payments/razorpay/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ promoCode: activePromoCode }),
+      body: JSON.stringify({
+        promoCode: activePromoCode,
+        postalCode: form.postalCode,
+      }),
     });
 
     const createData = (await createRes.json()) as {
@@ -273,11 +334,10 @@ export default function CheckoutPage() {
     setSubmitting(true);
 
     try {
-      if (paymentMethod === "cod") {
-        await placeCodOrder();
-      } else {
-        await placeRazorpayOrder();
+      if (!razorpayEnabled) {
+        throw new Error("Online payments are not available right now.");
       }
+      await placeRazorpayOrder();
     } catch (submitError) {
       const message =
         submitError instanceof Error
@@ -300,14 +360,11 @@ export default function CheckoutPage() {
     );
   }
 
-  const submitLabel =
-    paymentMethod === "razorpay"
-      ? submitting
-        ? "Processing payment…"
-        : `Pay now · ${formatPrice(total)}`
-      : submitting
-        ? "Placing order…"
-        : `Place order · ${formatPrice(total)}`;
+  const submitLabel = submitting
+    ? "Processing payment…"
+    : total == null
+      ? "Enter postal code for shipping"
+      : `Pay now · ${formatPrice(total)}`;
 
   return (
     <div className="min-h-screen pb-32 lg:pb-16">
@@ -495,43 +552,83 @@ export default function CheckoutPage() {
             <section className="surface-card rounded-2xl p-4 lg:p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Truck size={18} className="label-accent" />
+                <h2 className="font-bold text-sm">Shipping rates</h2>
+              </div>
+              <p className="mb-3 text-xs text-muted">
+                Distance from {SHIPPING_ORIGIN.name}, {SHIPPING_ORIGIN.city}. Enter
+                your postal code to see your exact charge.
+              </p>
+              <div className="space-y-2">
+                {SHIPPING_RATE_TIERS.map((tier) => {
+                  const active =
+                    shippingQuote?.tier.label === tier.label && !shippingLoading;
+                  return (
+                    <div
+                      key={tier.label}
+                      className={cn(
+                        "flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition",
+                        active
+                          ? "border-blue-500 bg-blue-500/5"
+                          : "border-(--border) bg-background",
+                      )}
+                    >
+                      <span className={cn(active ? "font-semibold" : "text-muted")}>
+                        {tier.label}
+                      </span>
+                      <span className={cn("font-semibold", active && "label-accent")}>
+                        {tier.fee === 0 ? "Free" : formatPrice(tier.fee)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {shippingLoading ? (
+                <p className="mt-3 flex items-center gap-2 text-xs text-muted">
+                  <LoaderCircle size={12} className="animate-spin" />
+                  Calculating distance…
+                </p>
+              ) : shippingQuote ? (
+                <p className="mt-3 text-xs text-muted">
+                  ~{shippingQuote.distanceKm} km from {SHIPPING_ORIGIN.name}
+                  {shippingQuote.placeName
+                    ? ` · ${shippingQuote.placeName}`
+                    : ""}{" "}
+                  ·{" "}
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {shippingQuote.shippingFee === 0
+                      ? "Free shipping"
+                      : formatPrice(shippingQuote.shippingFee)}
+                  </span>
+                </p>
+              ) : shippingError ? (
+                <p className="mt-3 text-xs text-rose-500">{shippingError}</p>
+              ) : (
+                <p className="mt-3 text-xs text-muted">
+                  Shipping updates once you enter a 6-digit postal code.
+                </p>
+              )}
+            </section>
+
+            <section className="surface-card rounded-2xl p-4 lg:p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <CreditCard size={18} className="label-accent" />
                 <h2 className="font-bold text-sm">Payment method</h2>
               </div>
-              <div className="space-y-2">
-                {razorpayEnabled ? (
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("razorpay")}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition",
-                      paymentMethod === "razorpay"
-                        ? "border-blue-500 bg-blue-500/5"
-                        : "border-(--border) bg-background",
-                    )}
-                  >
-                    <CreditCard size={18} className="mt-0.5 shrink-0 label-accent" />
-                    <div>
-                      <p className="font-semibold">Pay online</p>
-                      <p className="text-xs text-muted">
-                        UPI, cards, netbanking via Razorpay
-                      </p>
-                    </div>
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("cod")}
-                  className={cn(
-                    "w-full rounded-xl border px-4 py-3 text-left text-sm transition",
-                    paymentMethod === "cod"
-                      ? "border-blue-500 bg-blue-500/5"
-                      : "border-(--border) bg-background",
-                  )}
-                >
-                  <p className="font-semibold">Cash on Delivery</p>
-                  <p className="text-xs text-muted">Pay when your order arrives.</p>
-                </button>
-              </div>
+              {razorpayEnabled ? (
+                <div className="flex w-full items-start gap-3 rounded-xl border border-blue-500 bg-blue-500/5 px-4 py-3 text-left text-sm">
+                  <CreditCard size={18} className="mt-0.5 shrink-0 label-accent" />
+                  <div>
+                    <p className="font-semibold">Pay online</p>
+                    <p className="text-xs text-muted">
+                      UPI, cards, netbanking via Razorpay
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+                  Online payments are not configured. Please try again later.
+                </p>
+              )}
             </section>
 
             {error && (
@@ -610,7 +707,15 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+                  <span>
+                    {shippingLoading
+                      ? "…"
+                      : shipping == null
+                        ? "Enter PIN"
+                        : shipping === 0
+                          ? "Free"
+                          : formatPrice(shipping)}
+                  </span>
                 </div>
                 {promoDiscount > 0 ? (
                   <div className="flex justify-between text-emerald-600">
@@ -623,7 +728,7 @@ export default function CheckoutPage() {
                   style={{ color: "var(--foreground)" }}
                 >
                   <span>Total</span>
-                  <span>{formatPrice(total)}</span>
+                  <span>{total == null ? "—" : formatPrice(total)}</span>
                 </div>
               </div>
             </section>

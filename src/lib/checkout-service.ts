@@ -8,12 +8,8 @@ import { sendOrderConfirmationEmail } from "@/lib/order-email";
 import { mapOrderDetail, mapOrderSummary } from "@/lib/order-mapper";
 import { reservePromoCode, validatePromoCode } from "@/lib/promo-service";
 import { rupeesToPaise } from "@/lib/razorpay";
-import {
-  computeShippingFee,
-  getShippingSettings,
-} from "@/lib/shipping-settings";
+import { quoteShippingForPostalCode } from "@/lib/pincode-geocode";
 import type { CheckoutResult, ShippingAddress } from "@/types/order";
-import type { ShippingSettings } from "@/types/admin-settings";
 
 export class CheckoutError extends Error {
   status: number;
@@ -116,18 +112,34 @@ function validateCartItems(cart: CartWithItems | null) {
   }
 }
 
+async function resolveShippingFee(postalCode?: string): Promise<number> {
+  const pin = postalCode?.trim() ?? "";
+  if (!/^\d{6}$/.test(pin)) {
+    throw new CheckoutError("Enter a valid 6-digit postal code for shipping");
+  }
+  try {
+    const quote = await quoteShippingForPostalCode(pin);
+    return quote.shippingFee;
+  } catch (error) {
+    throw new CheckoutError(
+      error instanceof Error
+        ? error.message
+        : "Unable to calculate shipping for this postal code",
+      400,
+    );
+  }
+}
+
 async function computeTotals(
   cart: CartWithItems,
-  promoCodeInput?: string,
+  promoCodeInput: string | undefined,
+  shippingFee: number,
   tx?: Prisma.TransactionClient,
-  shippingSettings?: ShippingSettings,
 ): Promise<CheckoutTotals> {
-  const settings = shippingSettings ?? (await getShippingSettings());
   const subtotal = cart.items.reduce(
     (sum, item) => sum + Number(item.variant.product.price) * item.quantity,
     0,
   );
-  const shippingFee = computeShippingFee(subtotal, settings);
 
   let discount = 0;
   let promoCode: string | undefined;
@@ -153,6 +165,7 @@ async function computeTotals(
 export async function getCheckoutTotals(
   userId: string,
   promoCode?: string,
+  postalCode?: string,
 ): Promise<CheckoutTotals> {
   const cart = await prisma.cart.findUnique({
     where: { userId },
@@ -170,8 +183,8 @@ export async function getCheckoutTotals(
   });
 
   validateCartItems(cart);
-  const shippingSettings = await getShippingSettings();
-  return computeTotals(cart!, promoCode, undefined, shippingSettings);
+  const shippingFee = await resolveShippingFee(postalCode);
+  return computeTotals(cart!, promoCode, shippingFee);
 }
 
 export async function placeOrder(
@@ -180,9 +193,14 @@ export async function placeOrder(
   options?: PlaceOrderOptions,
 ): Promise<CheckoutResult> {
   const shippingAddress = validateShippingAddress(rawAddress);
-  const paymentMethod = options?.paymentMethod ?? "COD";
-  const paymentStatus =
-    options?.paymentStatus ?? (paymentMethod === "RAZORPAY" ? "PAID" : "PENDING");
+  const paymentMethod = options?.paymentMethod ?? "RAZORPAY";
+  if (paymentMethod === "COD") {
+    throw new CheckoutError(
+      "Cash on delivery is no longer available. Please pay online.",
+      400,
+    );
+  }
+  const paymentStatus = options?.paymentStatus ?? "PAID";
 
   if (paymentMethod === "RAZORPAY") {
     if (!options?.razorpayOrderId || !options?.razorpayPaymentId) {
@@ -204,6 +222,8 @@ export async function placeOrder(
     }
   }
 
+  const shippingFee = await resolveShippingFee(shippingAddress.postalCode);
+
   const order = await prisma.$transaction(async (tx) => {
     const cart = await tx.cart.findUnique({
       where: { userId },
@@ -222,12 +242,11 @@ export async function placeOrder(
 
     validateCartItems(cart);
 
-    const shippingSettings = await getShippingSettings();
     const totals = await computeTotals(
       cart!,
       options?.promoCode,
+      shippingFee,
       tx,
-      shippingSettings,
     );
 
     if (paymentMethod === "RAZORPAY") {

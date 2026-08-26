@@ -27,7 +27,7 @@ export default function AboutPage() {
           <ul className="mt-3 space-y-2 text-sm lg:text-base text-muted-strong">
             <li>Oversized silhouettes built for comfort and statement.</li>
             <li>Curated graphics, basics, and full-sleeve drops.</li>
-            <li>Transparent sizing, live stock, and COD checkout across India.</li>
+            <li>Transparent sizing, live stock, and secure online checkout.</li>
           </ul>
         </section>
 

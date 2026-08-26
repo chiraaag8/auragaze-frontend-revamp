@@ -160,7 +160,13 @@ export default function OrderDetailPage() {
             ) : null}
             <div className="flex justify-between text-muted">
               <span>Payment</span>
-              <span>Cash on Delivery</span>
+              <span>
+                {order.paymentMethod === "razorpay"
+                  ? "Paid online"
+                  : order.paymentMethod === "cod"
+                    ? "Cash on Delivery"
+                    : "Online"}
+              </span>
             </div>
             <div className="flex justify-between border-t border-(--border) pt-2 font-bold">
               <span>Total</span>

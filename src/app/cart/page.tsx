@@ -9,19 +9,16 @@ import PromoCodeForm from "@/components/PromoCodeForm";
 import TopBar from "@/components/TopBar";
 import PageShell from "@/components/PageShell";
 import { useCart } from "@/context/CartContext";
-import { useShippingSettings } from "@/context/ShippingSettingsContext";
+import { SHIPPING_RATE_TIERS } from "@/lib/shipping-distance";
 import { formatPrice } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, subtotal, itemCount, updateQuantity, removeItem, hydrated, syncing } =
     useCart();
-  const { shippingFee, freeShippingThreshold } = useShippingSettings();
   const [promoDiscount, setPromoDiscount] = useState(0);
 
   const hasItems = items.length > 0;
-  const shipping =
-    !hasItems || subtotal >= freeShippingThreshold ? 0 : shippingFee;
-  const total = Math.max(0, subtotal + shipping - promoDiscount);
+  const total = Math.max(0, subtotal - promoDiscount);
 
   const SummaryCard = () => (
     <motion.div
@@ -51,9 +48,7 @@ export default function CartPage() {
           </div>
           <div className="flex justify-between text-muted">
             <span>Shipping</span>
-            <span style={{ color: shipping === 0 ? "#10b981" : "var(--foreground)" }}>
-              {shipping === 0 ? "Free" : formatPrice(shipping)}
-            </span>
+            <span style={{ color: "var(--foreground)" }}>At checkout</span>
           </div>
           {promoDiscount > 0 ? (
             <div className="flex justify-between text-emerald-600">
@@ -61,16 +56,18 @@ export default function CartPage() {
               <span>-{formatPrice(promoDiscount)}</span>
             </div>
           ) : null}
-          {subtotal > 0 && subtotal < freeShippingThreshold && (
-            <p className="text-[11px] label-accent">
-              Add {formatPrice(freeShippingThreshold - subtotal)} more for free shipping
-            </p>
-          )}
+          <p className="text-[11px] text-muted">
+            Free within 10 km of Malleshwaram · then{" "}
+            {SHIPPING_RATE_TIERS.filter((t) => t.fee > 0)
+              .map((t) => t.shortLabel)
+              .join(" / ")}{" "}
+            by distance
+          </p>
           <div
             className="flex justify-between pt-2 mt-2 font-bold"
             style={{ borderTop: "1px solid var(--border)", color: "var(--foreground)" }}
           >
-            <span>Total</span>
+            <span>Total (excl. shipping)</span>
             <span>{formatPrice(total)}</span>
           </div>
         </div>

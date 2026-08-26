@@ -2,34 +2,63 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, LoaderCircle, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ProductCard from "@/components/ProductCard";
 import PageShell, { productGridClass } from "@/components/PageShell";
 import { shopFilters } from "@/lib/data";
+import {
+  filterLabelFromSlug,
+  filterSlugFromLabel,
+  matchesCategory,
+} from "@/lib/category-utils";
 import { useCatalog } from "@/context/CatalogContext";
 import { cn } from "@/lib/utils";
 
 const filters = shopFilters;
 const sortOptions = ["Featured", "Price: Low to High", "Price: High to Low", "Newest", "Top Rated"];
 
+function resolveFilterFromSlug(slug: string | null) {
+  if (!slug) return "All";
+  const label = filterLabelFromSlug(slug);
+  const known = filters.find(
+    (filter) => filter !== "All" && filterSlugFromLabel(filter) === slug,
+  );
+  return known ?? label;
+}
+
 export default function ShopPage() {
   const { products, loading, error, refresh } = useCatalog();
-  const [activeFilter, setActiveFilter] = useState("All");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const categoryParam = searchParams.get("category");
+  const [activeFilter, setActiveFilter] = useState(() => resolveFilterFromSlug(categoryParam));
   const [activeSort, setActiveSort] = useState("Featured");
   const [showSortSheet, setShowSortSheet] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setActiveFilter(resolveFilterFromSlug(categoryParam));
+  }, [categoryParam]);
+
+  const selectFilter = (filter: string) => {
+    setActiveFilter(filter);
+    if (filter === "All") {
+      router.replace("/shop", { scroll: false });
+      return;
+    }
+    router.replace(`/shop?category=${filterSlugFromLabel(filter)}`, { scroll: false });
+  };
+
+  const filterSlug =
+    activeFilter === "All" ? null : filterSlugFromLabel(activeFilter);
+
   const filtered =
-    activeFilter === "All"
+    !filterSlug
       ? products
-      : activeFilter === "New Arrivals"
-        ? products.filter((p) => p.badge === "new")
-        : products.filter((p) => {
-            const slug = activeFilter.toLowerCase().replace(/\s+/g, "-");
-            return p.subcategory === slug;
-          });
+      : products.filter((p) => matchesCategory(p, filterSlug));
 
   const sorted = [...filtered].sort((a, b) => {
     switch (activeSort) {
@@ -41,6 +70,11 @@ export default function ShopPage() {
       return Number(b.isFeatured) - Number(a.isFeatured);
     }
   });
+
+  const visibleFilters =
+    activeFilter === "All" || filters.includes(activeFilter)
+      ? filters
+      : [...filters.slice(0, 1), activeFilter, ...filters.slice(1)];
 
   useEffect(() => {
     if (!showSortMenu) return;
@@ -59,10 +93,10 @@ export default function ShopPage() {
 
       <PageShell className="pt-16 lg:pt-24">
         <div className="flex gap-2 overflow-x-auto pb-1 pt-4 scrollbar-hide snap-x lg:flex-wrap lg:overflow-visible lg:snap-none">
-          {filters.map((filter) => (
+          {visibleFilters.map((filter) => (
             <motion.button
               key={filter}
-              onClick={() => setActiveFilter(filter)}
+              onClick={() => selectFilter(filter)}
               whileTap={{ scale: 0.94 }}
               className={cn(
                 "filter-chip snap-start no-select",

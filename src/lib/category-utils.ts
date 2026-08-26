@@ -1,10 +1,21 @@
 import type { CarouselCategory, Category } from "@/lib/data";
 import type { StorefrontProduct } from "@/types/product";
 
-function matchesCategory(product: StorefrontProduct, slug: string) {
+export function matchesCategory(product: StorefrontProduct, slug: string) {
   return slug === "new-arrivals"
     ? product.badge === "new"
     : product.category === slug || product.subcategory === slug;
+}
+
+export function filterLabelFromSlug(slug: string) {
+  return slug
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function filterSlugFromLabel(label: string) {
+  return label.toLowerCase().replace(/\s+/g, "-");
 }
 
 export function getCategoryProductCount(

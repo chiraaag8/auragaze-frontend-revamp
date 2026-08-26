@@ -27,14 +27,12 @@ import TopBar from "@/components/TopBar";
 import PageShell, { pageShellClass, productGridClass } from "@/components/PageShell";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
-import { useShippingSettings } from "@/context/ShippingSettingsContext";
 import { cn, formatPrice, getDiscountPercent } from "@/lib/utils";
 
 export default function ProductPageClient({ id }: { id: string }) {
   const router = useRouter();
   const { addItem, itemCount, hydrated } = useCart();
   const { getProduct, getSimilarProducts, loading, error } = useCatalog();
-  const { freeShippingThreshold } = useShippingSettings();
   const product = getProduct(id);
 
   const [selectedImage, setSelectedImage] = useState(0);
@@ -560,7 +558,7 @@ export default function ProductPageClient({ id }: { id: string }) {
 
             <div className="grid grid-cols-3 gap-2 mb-8">
               {[
-                { icon: Package, label: "Free Shipping", sub: `Orders ${formatPrice(freeShippingThreshold)}+` },
+                { icon: Package, label: "Free Shipping", sub: "Within 10 km" },
                 { icon: Zap, label: "Fast Delivery", sub: "2-3 days" },
                 { icon: Shield, label: "1 Year Warranty", sub: "Guaranteed" },
               ].map(({ icon: Icon, label, sub }) => (

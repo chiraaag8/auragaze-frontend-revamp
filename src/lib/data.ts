@@ -93,7 +93,7 @@ export const carouselCategories: CarouselCategory[] = [
   }
 ];
 
-export const shopFilters = ["All","Basics","Graphic","Full Sleeve","New Arrivals"];
+export const shopFilters = ["All","Oversized Tees","Basics","Graphic","Full Sleeve","New Arrivals"];
 
 export const categories: Category[] = [
   {

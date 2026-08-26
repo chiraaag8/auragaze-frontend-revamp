@@ -23,7 +23,7 @@ export default async function AdminOverviewPage() {
     {
       label: "Revenue",
       value: formatPrice(stats.revenue),
-      hint: "COD + paid online orders",
+      hint: "Paid online orders",
       icon: IndianRupee,
     },
     {
@@ -185,7 +185,7 @@ export default async function AdminOverviewPage() {
             </div>
             <h2 className="font-heading text-lg font-bold">Shipping</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Flat fee and free-shipping threshold.
+              Distance-based shipping from Malleshwaram.
             </p>
           </Link>
         </div>

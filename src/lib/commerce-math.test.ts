@@ -2,10 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   amountsMatchPaise,
   calculatePromoDiscount,
+  computeDistanceShippingFee,
   computeShippingFee,
 } from "@/lib/commerce-math";
+import {
+  haversineKm,
+  shippingFeeForDistanceKm,
+  shippingTierForDistanceKm,
+} from "@/lib/shipping-distance";
 
-describe("computeShippingFee", () => {
+describe("computeShippingFee (legacy flat)", () => {
   const settings = { shippingFee: 99, freeShippingThreshold: 4000 };
 
   it("returns 0 for empty subtotal", () => {
@@ -19,6 +25,35 @@ describe("computeShippingFee", () => {
   it("is free at and above threshold", () => {
     expect(computeShippingFee(4000, settings)).toBe(0);
     expect(computeShippingFee(5500, settings)).toBe(0);
+  });
+});
+
+describe("distance shipping tiers", () => {
+  it("maps km bands to fees", () => {
+    expect(shippingFeeForDistanceKm(0)).toBe(0);
+    expect(shippingFeeForDistanceKm(9.9)).toBe(0);
+    expect(shippingFeeForDistanceKm(10)).toBe(99);
+    expect(shippingFeeForDistanceKm(19.9)).toBe(99);
+    expect(shippingFeeForDistanceKm(20)).toBe(199);
+    expect(shippingFeeForDistanceKm(29.9)).toBe(199);
+    expect(shippingFeeForDistanceKm(30)).toBe(299);
+    expect(shippingFeeForDistanceKm(120)).toBe(299);
+  });
+
+  it("exposes matching tier labels", () => {
+    expect(shippingTierForDistanceKm(5).label).toBe("Below 10 km");
+    expect(shippingTierForDistanceKm(15).label).toBe("10–20 km");
+    expect(shippingTierForDistanceKm(25).label).toBe("20–30 km");
+    expect(shippingTierForDistanceKm(40).label).toBe("Above 30 km");
+  });
+
+  it("computeDistanceShippingFee mirrors tiers", () => {
+    expect(computeDistanceShippingFee(8)).toBe(0);
+    expect(computeDistanceShippingFee(12)).toBe(99);
+  });
+
+  it("haversine is ~0 for same point", () => {
+    expect(haversineKm(13, 77, 13, 77)).toBeCloseTo(0, 5);
   });
 });
 

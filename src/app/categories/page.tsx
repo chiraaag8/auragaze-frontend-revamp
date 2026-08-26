@@ -79,11 +79,11 @@ export default function CategoriesPage() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl p-4 lg:p-6 text-center"
+              className="rounded-2xl p-3 sm:p-4 lg:p-6 text-center min-w-0"
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <p
-                className="font-black text-2xl lg:text-3xl"
+                className="font-black text-[clamp(0.8rem,3.8vw,1.875rem)] leading-tight break-words"
                 style={{
                   background: "var(--gradient-primary)",
                   WebkitBackgroundClip: "text",
@@ -93,7 +93,7 @@ export default function CategoriesPage() {
               >
                 {stat.value}
               </p>
-              <p className="text-xs lg:text-sm mt-0.5" style={{ color: "var(--muted)" }}>
+              <p className="text-[10px] sm:text-xs lg:text-sm mt-0.5" style={{ color: "var(--muted)" }}>
                 {stat.label}
               </p>
             </div>

@@ -75,7 +75,7 @@ export default function OrderConfirmationPage() {
           <p className="mt-2 text-sm text-muted">
             {order.paymentMethod === "razorpay"
               ? "Your payment was successful and your order is confirmed."
-              : "Your COD order has been placed successfully."}
+              : "Your order has been placed successfully."}
           </p>
           <p className="mt-4 text-xs uppercase tracking-[0.2em] text-muted">
             Order ID
@@ -84,7 +84,7 @@ export default function OrderConfirmationPage() {
           <p className="mt-4 text-3xl font-black">{formatPrice(order.total)}</p>
           <p className="mt-1 text-xs text-muted">
             {order.itemCount} {order.itemCount === 1 ? "item" : "items"} ·{" "}
-            {order.paymentMethod === "razorpay" ? "Paid online" : "Pay on delivery"}
+            {order.paymentMethod === "razorpay" ? "Paid online" : "Payment pending"}
           </p>
         </div>
 
