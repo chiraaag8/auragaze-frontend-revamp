@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, LoaderCircle, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import TopBar from "@/components/TopBar";
@@ -28,7 +28,7 @@ function resolveFilterFromSlug(slug: string | null) {
   return known ?? label;
 }
 
-export default function ShopPage() {
+function ShopContent() {
   const { products, loading, error, refresh } = useCatalog();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -263,5 +263,13 @@ export default function ShopPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense>
+      <ShopContent />
+    </Suspense>
   );
 }
