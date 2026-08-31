@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Star,
   Share2,
   ShoppingCart,
   Package,
@@ -348,24 +347,6 @@ export default function ProductPageClient({ id }: { id: string }) {
                   <Share2 size={16} style={{ color: "var(--foreground)" }} />
                 </motion.button>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={13}
-                    className={i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-300"}
-                  />
-                ))}
-              </div>
-              <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                {product.rating}
-              </span>
-              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                ({product.reviews} reviews)
-              </span>
             </div>
 
             <div className="flex items-center gap-3 mb-5">

@@ -17,7 +17,7 @@ import { useCatalog } from "@/context/CatalogContext";
 import { cn } from "@/lib/utils";
 
 const filters = shopFilters;
-const sortOptions = ["Featured", "Price: Low to High", "Price: High to Low", "Newest", "Top Rated"];
+const sortOptions = ["Featured", "Price: Low to High", "Price: High to Low", "Newest"];
 
 function resolveFilterFromSlug(slug: string | null) {
   if (!slug) return "All";
@@ -65,7 +65,6 @@ function ShopContent() {
       case "Price: Low to High": return a.price - b.price;
       case "Price: High to Low": return b.price - a.price;
     case "Newest": return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-      case "Top Rated": return b.rating - a.rating;
     default:
       return Number(b.isFeatured) - Number(a.isFeatured);
     }
@@ -214,7 +213,7 @@ function ShopContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSortSheet(false)}
-              className="fixed inset-0 z-50 lg:hidden"
+              className="fixed inset-0 z-[60] lg:hidden"
               style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
             />
             <motion.div
@@ -222,7 +221,7 @@ function ShopContent() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-6 lg:hidden"
+              className="fixed bottom-0 left-0 right-0 z-[61] rounded-t-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:hidden"
               style={{ background: "var(--background)", border: "1px solid var(--border)" }}
             >
               <div className="flex items-center justify-between mb-5">
@@ -236,7 +235,7 @@ function ShopContent() {
                   <X size={16} style={{ color: "var(--foreground)" }} />
                 </motion.button>
               </div>
-              <div className="flex flex-col gap-2 pb-6">
+              <div className="flex flex-col gap-2">
                 {sortOptions.map((option) => (
                   <motion.button
                     key={option}

@@ -13,7 +13,6 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Star,
   ShoppingBag,
   LoaderCircle,
 } from "lucide-react";
@@ -81,7 +80,6 @@ export default function ProfilePage() {
       label: "Wishlist",
       value: wishlistHydrated ? String(wishlistCount) : "—",
     },
-    { icon: Star, label: "Reviews", value: "—" },
   ];
   const initials = displayName
     .split(/\s+/)
@@ -130,7 +128,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-2">
+          <div className="grid grid-cols-2 gap-3 mb-2">
             {stats.map(({ icon: Icon, label, value }) => (
               <motion.div
                 key={label}
