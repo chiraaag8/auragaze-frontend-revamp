@@ -24,32 +24,43 @@ interface CatalogContextValue {
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
 
+let catalogProductsCache: StorefrontProduct[] | null = null;
+
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<StorefrontProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<StorefrontProduct[]>(
+    () => catalogProductsCache ?? [],
+  );
+  const [loading, setLoading] = useState(() => catalogProductsCache === null);
   const [error, setError] = useState<string | null>(null);
 
   const loadProducts = useCallback(async (signal?: AbortSignal) => {
-    await Promise.resolve();
-    setLoading(true);
+    const hasCachedProducts = catalogProductsCache !== null;
+    if (!hasCachedProducts) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
       const response = await fetch("/api/products?sort=featured", { signal });
       if (!response.ok) throw new Error("Product request failed");
       const result = (await response.json()) as StorefrontProduct[];
+      catalogProductsCache = result;
       setProducts(result);
     } catch (loadError) {
       if (loadError instanceof DOMException && loadError.name === "AbortError") {
         return;
       }
-      setError("Unable to load the catalog. Please try again.");
+      if (!hasCachedProducts) {
+        setError("Unable to load the catalog. Please try again.");
+      }
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    if (catalogProductsCache) return;
+
     const controller = new AbortController();
     queueMicrotask(() => {
       if (!controller.signal.aborted) {

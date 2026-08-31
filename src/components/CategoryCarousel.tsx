@@ -24,6 +24,8 @@ const SPRING: Transition = {
   mass: 0.85,
 };
 
+let carouselCategoriesCache: CarouselCategory[] | null = null;
+
 function wrapOffset(index: number, active: number, total: number): number {
   let diff = index - active;
   if (diff > total / 2) diff -= total;
@@ -82,6 +84,7 @@ function CarouselCard({
         src={category.image}
         alt={category.name}
         fill
+        priority={isActive}
         className={cn(
           "object-cover transition-transform duration-700 ease-out",
           isActive && "group-hover:scale-[1.06]"
@@ -92,6 +95,20 @@ function CarouselCard({
       <p className="absolute bottom-5 left-0 right-0 text-center text-[13px] lg:text-base font-semibold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]">
         {category.name}
       </p>
+      {isActive ? (
+        <Link
+          href={`/shop?category=${category.slug}`}
+          prefetch={false}
+          className="absolute inset-0 z-10"
+          aria-label={`Shop ${category.name}`}
+          onClick={(e) => {
+            if (didDragRef.current) {
+              e.preventDefault();
+              didDragRef.current = false;
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 
@@ -118,29 +135,19 @@ function CarouselCard({
         if (!isActive) onSelect();
       }}
     >
-      {isActive ? (
-        <Link
-          href={`/shop?category=${category.slug}`}
-          className="block h-full w-full"
-          onClick={(e) => {
-            if (didDragRef.current) {
-              e.preventDefault();
-              didDragRef.current = false;
-            }
-          }}
-        >
-          {cardInner}
-        </Link>
-      ) : (
-        cardInner
-      )}
+      {cardInner}
     </motion.div>
   );
 }
 
 export default function CategoryCarousel() {
   const { products } = useCatalog();
-  const [categories, setCategories] = useState<CarouselCategory[]>(fallbackCategories);
+  const [categories, setCategories] = useState<CarouselCategory[]>(
+    () => carouselCategoriesCache ?? [],
+  );
+  const [categoriesReady, setCategoriesReady] = useState(
+    () => carouselCategoriesCache !== null,
+  );
   const liveCategories = getLiveCarouselCategories(categories, products);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -171,6 +178,11 @@ export default function CategoryCarousel() {
   };
 
   useEffect(() => {
+    if (carouselCategoriesCache) {
+      setCategoriesReady(true);
+      return;
+    }
+
     let active = true;
     (async () => {
       try {
@@ -178,10 +190,20 @@ export default function CategoryCarousel() {
         if (!response.ok || !active) return;
         const data = (await response.json()) as CarouselCategory[];
         if (Array.isArray(data) && data.length > 0) {
+          carouselCategoriesCache = data;
           setCategories(data);
+          return;
+        }
+        if (!carouselCategoriesCache) {
+          carouselCategoriesCache = fallbackCategories;
+          setCategories(fallbackCategories);
         }
       } catch {
-        // Keep fallback categories when the API is unavailable.
+        if (active && !carouselCategoriesCache) {
+          setCategories(fallbackCategories);
+        }
+      } finally {
+        if (active) setCategoriesReady(true);
       }
     })();
     return () => {
@@ -234,6 +256,10 @@ export default function CategoryCarousel() {
       offset: wrapOffset(index, activeIndex, total),
     }))
     .sort((a, b) => getCardStyle(a.offset, cardW).zIndex - getCardStyle(b.offset, cardW).zIndex);
+
+  if (!categoriesReady) {
+    return null;
+  }
 
   if (total === 0) {
     return null;
